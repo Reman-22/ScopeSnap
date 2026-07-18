@@ -62,4 +62,12 @@ class User extends Authenticatable
     {
         return $this->isFreelancer() ? 'freelancer' : 'client';
     }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<Client, $this>
+     */
+    public function clients()
+    {
+        return $this->hasMany(Client::class, 'owner_id');
+    }
 }
