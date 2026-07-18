@@ -70,4 +70,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Client::class, 'owner_id');
     }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<Project, $this>
+     */
+    public function projects()
+    {
+        return $this->hasMany(Project::class, 'owner_id');
+    }
 }

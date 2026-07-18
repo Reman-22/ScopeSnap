@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, 'index']);
+
+Route::get('/share/{shareLink}', [ProjectController::class, 'showByShareLink']);
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [UserController::class, 'register']);
@@ -19,7 +22,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [UserController::class, 'logout']);
     });
 
+    Route::middleware('client')->group(function () {
+        Route::post('/share/{shareLink}/approve', [ProjectController::class, 'approve']);
+    });
+
     Route::middleware('freelancer')->group(function () {
         Route::apiResource('clients', ClientController::class);
+        Route::post('projects/{project}/send', [ProjectController::class, 'send']);
+        Route::apiResource('projects', ProjectController::class);
     });
 });
