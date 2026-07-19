@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectApproval;
+use App\Models\ActivityLog;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\ClientProjectLinker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -73,6 +75,13 @@ class ProjectApprovalController extends Controller
             'approved_at' => now(),
             'status' => Project::STATUS_APPROVED,
         ]);
+
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_SCOPE_APPROVED,
+            "Client \"{$client->name}\" approved the project scope",
+            $clientUser
+        );
 
         return $this->success(
             [

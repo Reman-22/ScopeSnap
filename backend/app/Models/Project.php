@@ -100,6 +100,14 @@ class Project extends Model
         return $this->hasMany(ChangeRequest::class);
     }
 
+    /**
+     * @return HasMany<ActivityLog, $this>
+     */
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class)->latest();
+    }
+
     public function isApproved(): bool
     {
         return in_array($this->status, [

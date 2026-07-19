@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\ChangeRequestController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\HealthController;
@@ -35,6 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/change-requests/{changeRequest}', [ChangeRequestController::class, 'show']);
     Route::delete('/change-requests/{changeRequest}', [ChangeRequestController::class, 'destroy']);
+    Route::get('/projects/{project}/activity-logs', [ActivityLogController::class, 'index']);
 
     Route::middleware('freelancer')->group(function () {
         Route::apiResource('clients', ClientController::class);

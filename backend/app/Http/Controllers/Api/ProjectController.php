@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProjectApproval;
+use App\Services\ActivityLogger;
+use App\Models\ActivityLog;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\ScopeFormatter;
@@ -46,6 +48,13 @@ class ProjectController extends Controller
             'client_id' => null,
             'status' => Project::STATUS_DRAFT,
         ]);
+
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_PROJECT_CREATED,
+            "Project \"{$project->title}\" was created",
+            $freelancer
+        );
 
         return $this->created(
             ['project' => $this->formatProject($project)],

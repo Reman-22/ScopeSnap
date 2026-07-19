@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ScopeItem;
+use App\Models\ActivityLog;
+use App\Services\ActivityLogger;
 use App\Models\ScopeSection;
 use App\Support\ScopeFormatter;
 use Illuminate\Http\JsonResponse;
@@ -46,6 +48,13 @@ class ScopeItemController extends Controller
             'status' => $this->normalizeStatus($data['status'] ?? ScopeItem::STATUS_INCLUDED),
             'position' => $position,
         ]);
+
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_ITEM_ADDED,
+            "Item \"{$item->title}\" was added to section \"{$section->title}\"",
+            $request->user()
+        );
 
         return $this->created(
             ['item' => ScopeFormatter::item($item)],

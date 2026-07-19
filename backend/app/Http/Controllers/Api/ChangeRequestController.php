@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChangeRequest;
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\ScopeItem;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\ClientProjectLinker;
 use App\Support\ChangeRequestFormatter;
 use Illuminate\Http\JsonResponse;
@@ -89,6 +91,13 @@ class ChangeRequestController extends Controller
             $project->update(['client_id' => $client->id]);
         }
 
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_CHANGE_REQUEST_CREATED,
+            "Change request \"{$changeRequest->title}\" was created",
+            $clientUser
+        );
+
         $changeRequest->load(['client', 'item']);
 
         return $this->created(
@@ -143,6 +152,15 @@ class ChangeRequestController extends Controller
             'status' => $status,
             'reason' => $data['reason'] ?? null,
         ]);
+
+        if ($status === ChangeRequest::STATUS_APPROVED) {
+            ActivityLogger::log(
+                $project,
+                ActivityLog::ACTION_CHANGE_REQUEST_APPROVED,
+                "Change request \"{$changeRequest->title}\" was approved",
+                $request->user()
+            );
+        }
 
         $changeRequest->load(['client', 'item']);
 

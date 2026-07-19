@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ScopeSection;
+use App\Models\ActivityLog;
+use App\Services\ActivityLogger;
 use App\Support\ScopeFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,6 +50,13 @@ class ScopeSectionController extends Controller
             'title' => $data['title'],
             'position' => $position,
         ]);
+
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_SECTION_ADDED,
+            "Section \"{$section->title}\" was added",
+            $request->user()
+        );
 
         $section->load('items');
 
