@@ -111,6 +111,40 @@ class ChangeRequestTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_change_request_does_not_link_client_to_project(): void
+    {
+        [$project, $clientUser, $client] = $this->approvedProjectSetup();
+        Sanctum::actingAs($clientUser);
+
+        $this->postJson("/api/projects/{$project->id}/change-requests", [
+            'title' => 'Add blog section',
+            'description' => 'Please add a blog to the website',
+        ])->assertCreated();
+
+        $project->refresh();
+
+        $this->assertSame($client->id, $project->client_id);
+    }
+
+    public function test_unlinked_client_cannot_create_change_request(): void
+    {
+        [$project, , $client] = $this->approvedProjectSetup();
+        $otherClientUser = User::factory()->create(['role' => User::ROLE_CLIENT]);
+
+        Sanctum::actingAs($otherClientUser);
+
+        $this->postJson("/api/projects/{$project->id}/change-requests", [
+            'title' => 'Unauthorized request',
+            'description' => 'Should fail',
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('change_requests', [
+            'project_id' => $project->id,
+            'client_id' => $client->id,
+            'title' => 'Unauthorized request',
+        ]);
+    }
+
     /**
      * @return array{0: Project, 1: User, 2: Client, 3?: User}
      */

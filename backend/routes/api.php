@@ -13,14 +13,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, 'index']);
 
-Route::get('/share/{shareLink}', [ProjectController::class, 'showByShareLink']);
-
 Route::prefix('auth')->group(function () {
     Route::post('/register', [UserController::class, 'register']);
     Route::post('/login', [UserController::class, 'login']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/share/{shareLink}', [ProjectController::class, 'showByShareLink']);
+
     Route::prefix('auth')->group(function () {
         Route::get('/me', [UserController::class, 'me']);
         Route::post('/profile', [UserController::class, 'update']);

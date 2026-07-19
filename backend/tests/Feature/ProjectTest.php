@@ -94,9 +94,24 @@ class ProjectTest extends TestCase
         ]);
     }
 
-    public function test_public_share_link_can_be_viewed_without_auth(): void
+    public function test_share_link_requires_authentication(): void
     {
         $freelancer = User::factory()->create(['role' => User::ROLE_FREELANCER]);
+
+        Project::create([
+            'title' => 'Protected Project',
+            'owner_id' => $freelancer->id,
+            'share_link' => 'share-public-123',
+            'status' => Project::STATUS_SENT,
+        ]);
+
+        $this->getJson('/api/share/share-public-123')->assertUnauthorized();
+    }
+
+    public function test_logged_in_client_can_view_share_link(): void
+    {
+        $freelancer = User::factory()->create(['role' => User::ROLE_FREELANCER]);
+        $clientUser = User::factory()->create(['role' => User::ROLE_CLIENT]);
 
         Project::create([
             'title' => 'Public Project',
@@ -105,9 +120,29 @@ class ProjectTest extends TestCase
             'status' => Project::STATUS_SENT,
         ]);
 
+        Sanctum::actingAs($clientUser);
+
         $response = $this->getJson('/api/share/share-public-123');
 
         $response->assertOk()
             ->assertJsonPath('data.project.name', 'Public Project');
+    }
+
+    public function test_freelancer_owner_can_view_share_link(): void
+    {
+        $freelancer = User::factory()->create(['role' => User::ROLE_FREELANCER]);
+
+        Project::create([
+            'title' => 'Owner Preview',
+            'owner_id' => $freelancer->id,
+            'share_link' => 'share-owner-preview',
+            'status' => Project::STATUS_SENT,
+        ]);
+
+        Sanctum::actingAs($freelancer);
+
+        $this->getJson('/api/share/share-owner-preview')
+            ->assertOk()
+            ->assertJsonPath('data.project.name', 'Owner Preview');
     }
 }

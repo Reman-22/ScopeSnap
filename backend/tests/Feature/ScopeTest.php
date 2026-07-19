@@ -82,6 +82,7 @@ class ScopeTest extends TestCase
     public function test_share_link_includes_scope_for_client_view(): void
     {
         $freelancer = User::factory()->create(['role' => User::ROLE_FREELANCER]);
+        $clientUser = User::factory()->create(['role' => User::ROLE_CLIENT]);
 
         $project = Project::create([
             'title' => 'Shared App',
@@ -95,6 +96,8 @@ class ScopeTest extends TestCase
             'title' => 'Features',
             'position' => 0,
         ]);
+
+        Sanctum::actingAs($clientUser);
 
         $response = $this->getJson('/api/share/share-scope-public');
 

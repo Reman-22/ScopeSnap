@@ -130,7 +130,7 @@ class ProjectController extends Controller
         );
     }
 
-    public function showByShareLink(string $shareLink): JsonResponse
+    public function showByShareLink(Request $request, string $shareLink): JsonResponse
     {
         $project = Project::query()
             ->where('share_link', $shareLink)
@@ -141,10 +141,32 @@ class ProjectController extends Controller
             return $this->notFound('Project not found');
         }
 
+        $this->ensureCanAccessShareLink($request, $project);
+
         return $this->success(
             ['project' => $this->formatProject($project)],
             'Project retrieved'
         );
+    }
+
+    private function ensureCanAccessShareLink(Request $request, Project $project): void
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if (! $user) {
+            abort(401, 'Authentication required');
+        }
+
+        if ($user->isFreelancer() && $project->owner_id === $user->id) {
+            return;
+        }
+
+        if ($user->isClient()) {
+            return;
+        }
+
+        abort(403, 'You do not have access to this shared project');
     }
 
     private function ensureOwnedByFreelancer(Request $request, Project $project): void

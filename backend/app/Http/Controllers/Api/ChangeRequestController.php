@@ -10,7 +10,6 @@ use App\Models\Project;
 use App\Models\ScopeItem;
 use App\Models\User;
 use App\Services\ActivityLogger;
-use App\Services\ClientProjectLinker;
 use App\Support\ChangeRequestFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,10 +63,17 @@ class ChangeRequestController extends Controller
             return $this->error('Change requests can only be created for approved projects', 422);
         }
 
-        $client = ClientProjectLinker::resolve($clientUser, $project);
+        if (! $project->client_id) {
+            return $this->error('Change requests require a project that was approved by a linked client', 422);
+        }
 
-        if ($project->client_id && $project->client_id !== $client->id) {
-            return $this->forbidden('You are not the client for this project');
+        $client = Client::query()
+            ->where('id', $project->client_id)
+            ->where('user_id', $clientUser->id)
+            ->first();
+
+        if (! $client) {
+            return $this->forbidden('You are not the linked client for this project');
         }
 
         $validator = Validator::make($request->all(), $this->storeRules($project));
@@ -86,10 +92,6 @@ class ChangeRequestController extends Controller
             'description' => $data['description'],
             'status' => ChangeRequest::STATUS_PENDING,
         ]);
-
-        if (! $project->client_id) {
-            $project->update(['client_id' => $client->id]);
-        }
 
         ActivityLogger::log(
             $project,
