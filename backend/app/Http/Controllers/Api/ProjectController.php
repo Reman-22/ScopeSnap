@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\ScopeFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -20,7 +21,7 @@ class ProjectController extends Controller
 
         $projects = Project::query()
             ->where('owner_id', $freelancer->id)
-            ->with('client')
+            ->with(['client', 'scopeSections.items'])
             ->latest()
             ->get()
             ->map(fn (Project $project) => $this->formatProject($project));
@@ -56,7 +57,7 @@ class ProjectController extends Controller
     {
         $this->ensureOwnedByFreelancer($request, $project);
 
-        $project->load('client');
+        $project->load(['client', 'scopeSections.items']);
 
         return $this->success(
             ['project' => $this->formatProject($project)],
@@ -81,7 +82,7 @@ class ProjectController extends Controller
         $project->update($validator->validated());
 
         return $this->success(
-            ['project' => $this->formatProject($project->fresh()->load('client'))],
+            ['project' => $this->formatProject($project->fresh()->load(['client', 'scopeSections.items']))],
             'Project updated successfully'
         );
     }
@@ -106,7 +107,7 @@ class ProjectController extends Controller
         $project->update(['status' => Project::STATUS_SENT]);
 
         return $this->success(
-            ['project' => $this->formatProject($project->fresh()->load('client'))],
+            ['project' => $this->formatProject($project->fresh()->load(['client', 'scopeSections.items']))],
             'Project sent to client'
         );
     }
@@ -115,7 +116,7 @@ class ProjectController extends Controller
     {
         $project = Project::query()
             ->where('share_link', $shareLink)
-            ->with('client')
+            ->with(['client', 'scopeSections.items'])
             ->first();
 
         if (! $project) {
@@ -158,7 +159,7 @@ class ProjectController extends Controller
         ]);
 
         return $this->success(
-            ['project' => $this->formatProject($project->fresh()->load('client'))],
+            ['project' => $this->formatProject($project->fresh()->load(['client', 'scopeSections.items']))],
             'Project approved successfully'
         );
     }
@@ -245,6 +246,9 @@ class ProjectController extends Controller
                     'company' => $project->client->company,
                 ]
                 : null,
+            'scopeSections' => $project->relationLoaded('scopeSections')
+                ? ScopeFormatter::sections($project->scopeSections)
+                : [],
             'created_at' => $project->created_at,
             'createdAt' => $project->created_at,
             'updated_at' => $project->updated_at,

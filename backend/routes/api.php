@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ScopeItemController;
+use App\Http\Controllers\Api\ScopeSectionController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,5 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('clients', ClientController::class);
         Route::post('projects/{project}/send', [ProjectController::class, 'send']);
         Route::apiResource('projects', ProjectController::class);
+        Route::apiResource('projects.sections', ScopeSectionController::class);
+        Route::apiResource('projects.sections.items', ScopeItemController::class);
     });
 });
