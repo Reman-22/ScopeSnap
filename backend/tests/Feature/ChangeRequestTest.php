@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ProjectApproval;
 use App\Models\ChangeRequest;
 use App\Models\Client;
 use App\Models\Project;
@@ -170,12 +169,8 @@ class ChangeRequestTest extends TestCase
             'share_link' => 'share-cr-'.uniqid(),
             'status' => Project::STATUS_APPROVED,
             'approved_at' => now(),
-        ]);
-
-        ProjectApproval::create([
-            'project_id' => $project->id,
-            'client_id' => $client->id,
-            'status' => ProjectApproval::STATUS_APPROVED,
+            'approval_status' => Project::APPROVAL_STATUS_APPROVED,
+            'approval_client_id' => $client->id,
         ]);
 
         if ($withFreelancer) {

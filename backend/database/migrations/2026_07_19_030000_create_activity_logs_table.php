@@ -18,11 +18,20 @@ return new class extends Migration
             $table->text('description');
             $table->enum('action', [
                 'project_created',
+                'project_updated',
+                'scope_sent',
                 'section_added',
+                'section_updated',
+                'section_deleted',
                 'item_added',
+                'item_updated',
+                'item_deleted',
                 'scope_approved',
+                'scope_rejected',
                 'change_request_created',
                 'change_request_approved',
+                'change_request_rejected',
+                'change_request_deleted',
             ]);
             $table->timestamps();
         });

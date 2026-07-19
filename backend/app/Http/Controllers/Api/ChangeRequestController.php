@@ -162,6 +162,13 @@ class ChangeRequestController extends Controller
                 "Change request \"{$changeRequest->title}\" was approved",
                 $request->user()
             );
+        } else {
+            ActivityLogger::log(
+                $project,
+                ActivityLog::ACTION_CHANGE_REQUEST_REJECTED,
+                "Change request \"{$changeRequest->title}\" was rejected",
+                $request->user()
+            );
         }
 
         $changeRequest->load(['client', 'item']);
@@ -187,7 +194,17 @@ class ChangeRequestController extends Controller
             return $this->forbidden('You do not have access to this change request');
         }
 
+        $title = $changeRequest->title;
+        $project = $changeRequest->project;
+
         $changeRequest->delete();
+
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_CHANGE_REQUEST_DELETED,
+            "Change request \"{$title}\" was deleted",
+            $request->user()
+        );
 
         return $this->success(null, 'Change request deleted successfully');
     }

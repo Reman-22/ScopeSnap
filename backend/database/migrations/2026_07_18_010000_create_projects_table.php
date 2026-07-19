@@ -18,6 +18,9 @@ return new class extends Migration
             $table->foreignId('client_id')->nullable()->constrained('clients')->nullOnDelete();
             $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
             $table->timestamp('approved_at')->nullable();
+            $table->enum('approval_status', ['pending', 'approved', 'rejected'])->nullable();
+            $table->text('approval_comment')->nullable();
+            $table->foreignId('approval_client_id')->nullable()->constrained('clients')->nullOnDelete();
             $table->string('share_link')->unique();
             $table->enum('status', [
                 'draft',

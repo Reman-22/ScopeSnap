@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
-use App\Models\ProjectApproval;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -29,10 +28,10 @@ class ProjectApprovalTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.project.status', 'sent');
 
-        $this->assertDatabaseHas('project_approvals', [
-            'project_id' => $project->id,
-            'status' => ProjectApproval::STATUS_PENDING,
-            'client_id' => null,
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'approval_status' => Project::APPROVAL_STATUS_PENDING,
+            'approval_client_id' => null,
         ]);
     }
 
@@ -49,11 +48,7 @@ class ProjectApprovalTest extends TestCase
             'owner_id' => $freelancer->id,
             'share_link' => 'share-project-approval-2',
             'status' => Project::STATUS_SENT,
-        ]);
-
-        ProjectApproval::create([
-            'project_id' => $project->id,
-            'status' => ProjectApproval::STATUS_PENDING,
+            'approval_status' => Project::APPROVAL_STATUS_PENDING,
         ]);
 
         Sanctum::actingAs($clientUser);
@@ -82,11 +77,7 @@ class ProjectApprovalTest extends TestCase
             'owner_id' => $freelancer->id,
             'share_link' => 'share-project-approval-3',
             'status' => Project::STATUS_SENT,
-        ]);
-
-        ProjectApproval::create([
-            'project_id' => $project->id,
-            'status' => ProjectApproval::STATUS_PENDING,
+            'approval_status' => Project::APPROVAL_STATUS_PENDING,
         ]);
 
         Sanctum::actingAs($clientUser);
@@ -110,11 +101,7 @@ class ProjectApprovalTest extends TestCase
             'owner_id' => $freelancer->id,
             'share_link' => 'share-project-approval-4',
             'status' => Project::STATUS_SENT,
-        ]);
-
-        ProjectApproval::create([
-            'project_id' => $project->id,
-            'status' => ProjectApproval::STATUS_PENDING,
+            'approval_status' => Project::APPROVAL_STATUS_PENDING,
         ]);
 
         $this->getJson("/api/projects/{$project->id}/project-approval")

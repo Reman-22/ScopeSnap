@@ -11,6 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('scope_sections', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
+            $table->string('title');
+            $table->unsignedInteger('position')->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('scope_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('section_id')->constrained('scope_sections')->cascadeOnDelete();
@@ -28,5 +36,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('scope_items');
+        Schema::dropIfExists('scope_sections');
     }
 };

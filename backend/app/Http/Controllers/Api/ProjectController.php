@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProjectApproval;
 use App\Services\ActivityLogger;
 use App\Models\ActivityLog;
 use App\Models\Project;
@@ -90,6 +89,13 @@ class ProjectController extends Controller
 
         $project->update($validator->validated());
 
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_PROJECT_UPDATED,
+            "Project \"{$project->title}\" was updated",
+            $request->user()
+        );
+
         return $this->success(
             ['project' => $this->formatProject($project->fresh()->load(['client', 'scopeSections.items']))],
             'Project updated successfully'
@@ -113,15 +119,18 @@ class ProjectController extends Controller
             return $this->error('Only draft projects can be sent to the client', 422);
         }
 
-        $project->update(['status' => Project::STATUS_SENT]);
+        $project->update([
+            'status' => Project::STATUS_SENT,
+            'approval_status' => Project::APPROVAL_STATUS_PENDING,
+            'approval_comment' => null,
+            'approval_client_id' => null,
+        ]);
 
-        ProjectApproval::updateOrCreate(
-            ['project_id' => $project->id],
-            [
-                'client_id' => null,
-                'comment' => null,
-                'status' => ProjectApproval::STATUS_PENDING,
-            ]
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_SCOPE_SENT,
+            "Project \"{$project->title}\" was sent to the client for approval",
+            $request->user()
         );
 
         return $this->success(
@@ -134,7 +143,7 @@ class ProjectController extends Controller
     {
         $project = Project::query()
             ->where('share_link', $shareLink)
-            ->with(['client', 'scopeSections.items', 'projectApproval'])
+            ->with(['client', 'scopeSections.items', 'approvalClient'])
             ->first();
 
         if (! $project) {
@@ -229,22 +238,8 @@ class ProjectController extends Controller
             'scopeSections' => $project->relationLoaded('scopeSections')
                 ? ScopeFormatter::sections($project->scopeSections)
                 : [],
-            'project_approval' => $project->relationLoaded('projectApproval') && $project->projectApproval
-                ? [
-                    'id' => $project->projectApproval->id,
-                    'status' => $project->projectApproval->status,
-                    'comment' => $project->projectApproval->comment,
-                    'clientId' => $project->projectApproval->client_id,
-                ]
-                : null,
-            'projectApproval' => $project->relationLoaded('projectApproval') && $project->projectApproval
-                ? [
-                    'id' => $project->projectApproval->id,
-                    'status' => $project->projectApproval->status,
-                    'comment' => $project->projectApproval->comment,
-                    'clientId' => $project->projectApproval->client_id,
-                ]
-                : null,
+            'project_approval' => $project->approvalPayload(),
+            'projectApproval' => $project->approvalPayload(),
             'created_at' => $project->created_at,
             'createdAt' => $project->created_at,
             'updated_at' => $project->updated_at,

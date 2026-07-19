@@ -95,6 +95,13 @@ class ScopeSectionController extends Controller
         $section->update($validator->validated());
         $section->load('items');
 
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_SECTION_UPDATED,
+            "Section \"{$section->title}\" was updated",
+            $request->user()
+        );
+
         return $this->success(
             ['section' => ScopeFormatter::section($section)],
             'Scope section updated successfully'
@@ -106,7 +113,16 @@ class ScopeSectionController extends Controller
         $this->ensureSectionBelongsToProject($request, $project, $section);
         $this->ensureProjectEditable($project);
 
+        $title = $section->title;
+
         $section->delete();
+
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_SECTION_DELETED,
+            "Section \"{$title}\" was deleted",
+            $request->user()
+        );
 
         return $this->success(null, 'Scope section deleted successfully');
     }

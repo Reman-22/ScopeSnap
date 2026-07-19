@@ -91,6 +91,13 @@ class ScopeItemController extends Controller
 
         $item->update($data);
 
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_ITEM_UPDATED,
+            "Item \"{$item->title}\" was updated in section \"{$section->title}\"",
+            $request->user()
+        );
+
         return $this->success(
             ['item' => ScopeFormatter::item($item->fresh())],
             'Scope item updated successfully'
@@ -102,7 +109,16 @@ class ScopeItemController extends Controller
         $this->ensureItemBelongsToSection($request, $project, $section, $item);
         $this->ensureProjectEditable($project);
 
+        $title = $item->title;
+
         $item->delete();
+
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_ITEM_DELETED,
+            "Item \"{$title}\" was deleted from section \"{$section->title}\"",
+            $request->user()
+        );
 
         return $this->success(null, 'Scope item deleted successfully');
     }

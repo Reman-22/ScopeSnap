@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ProjectApproval;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -66,11 +65,7 @@ class ProjectTest extends TestCase
             'owner_id' => $freelancer->id,
             'share_link' => 'share-approve-123',
             'status' => Project::STATUS_SENT,
-        ]);
-
-        ProjectApproval::create([
-            'project_id' => $project->id,
-            'status' => ProjectApproval::STATUS_PENDING,
+            'approval_status' => Project::APPROVAL_STATUS_PENDING,
         ]);
 
         Sanctum::actingAs($clientUser);

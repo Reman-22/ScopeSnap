@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Project;
-use App\Models\ProjectApproval;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -44,11 +43,7 @@ class ActivityLogTest extends TestCase
             'owner_id' => $freelancer->id,
             'share_link' => 'share-activity-1',
             'status' => Project::STATUS_SENT,
-        ]);
-
-        ProjectApproval::create([
-            'project_id' => $project->id,
-            'status' => ProjectApproval::STATUS_PENDING,
+            'approval_status' => Project::APPROVAL_STATUS_PENDING,
         ]);
 
         Sanctum::actingAs($clientUser);
@@ -118,5 +113,102 @@ class ActivityLogTest extends TestCase
         $this->getJson("/api/projects/{$project->id}/activity-logs")
             ->assertOk()
             ->assertJsonPath('data.activity_logs.0.type', 'scope_approved');
+    }
+
+    public function test_sending_project_logs_scope_sent(): void
+    {
+        $freelancer = User::factory()->create(['role' => User::ROLE_FREELANCER]);
+        Sanctum::actingAs($freelancer);
+
+        $project = Project::create([
+            'title' => 'Send Log Project',
+            'owner_id' => $freelancer->id,
+            'share_link' => 'share-activity-send',
+            'status' => Project::STATUS_DRAFT,
+        ]);
+
+        $this->postJson("/api/projects/{$project->id}/send")->assertOk();
+
+        $this->assertDatabaseHas('activity_logs', [
+            'project_id' => $project->id,
+            'user_id' => $freelancer->id,
+            'action' => ActivityLog::ACTION_SCOPE_SENT,
+        ]);
+    }
+
+    public function test_rejecting_scope_logs_activity(): void
+    {
+        $freelancer = User::factory()->create(['role' => User::ROLE_FREELANCER]);
+        $clientUser = User::factory()->create(['role' => User::ROLE_CLIENT]);
+
+        $project = Project::create([
+            'title' => 'Reject Log Project',
+            'owner_id' => $freelancer->id,
+            'share_link' => 'share-activity-reject',
+            'status' => Project::STATUS_SENT,
+            'approval_status' => Project::APPROVAL_STATUS_PENDING,
+        ]);
+
+        Sanctum::actingAs($clientUser);
+        $this->postJson('/api/share/share-activity-reject/reject')->assertOk();
+
+        $this->assertDatabaseHas('activity_logs', [
+            'project_id' => $project->id,
+            'user_id' => $clientUser->id,
+            'action' => ActivityLog::ACTION_SCOPE_REJECTED,
+        ]);
+    }
+
+    public function test_rejecting_change_request_logs_activity(): void
+    {
+        [$project, $clientUser, $client, $freelancer] = $this->approvedProjectWithChangeRequest();
+
+        Sanctum::actingAs($freelancer);
+
+        $changeRequest = $project->changeRequests()->first();
+
+        $this->patchJson("/api/change-requests/{$changeRequest->id}/status", [
+            'status' => 'rejected',
+            'reason' => 'Out of scope',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('activity_logs', [
+            'project_id' => $project->id,
+            'user_id' => $freelancer->id,
+            'action' => ActivityLog::ACTION_CHANGE_REQUEST_REJECTED,
+        ]);
+    }
+
+    /**
+     * @return array{0: Project, 1: User, 2: Client, 3: User}
+     */
+    private function approvedProjectWithChangeRequest(): array
+    {
+        $freelancer = User::factory()->create(['role' => User::ROLE_FREELANCER]);
+        $clientUser = User::factory()->create(['role' => User::ROLE_CLIENT]);
+
+        $client = Client::create([
+            'owner_id' => $freelancer->id,
+            'user_id' => $clientUser->id,
+            'name' => $clientUser->name,
+            'email' => $clientUser->email,
+        ]);
+
+        $project = Project::create([
+            'title' => 'CR Log Project',
+            'owner_id' => $freelancer->id,
+            'client_id' => $client->id,
+            'share_link' => 'share-cr-log',
+            'status' => Project::STATUS_APPROVED,
+            'approved_at' => now(),
+        ]);
+
+        Sanctum::actingAs($clientUser);
+        $this->postJson("/api/projects/{$project->id}/change-requests", [
+            'title' => 'Add feature',
+            'description' => 'Need extra work',
+        ])->assertCreated();
+
+        return [$project, $clientUser, $client, $freelancer];
     }
 }

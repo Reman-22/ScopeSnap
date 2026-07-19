@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Project;
-use App\Models\ProjectApproval;
 use App\Models\ActivityLog;
+use App\Models\Project;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\ClientProjectLinker;
@@ -21,14 +20,14 @@ class ProjectApprovalController extends Controller
             abort(403, 'You do not have access to this project');
         }
 
-        $projectApproval = $project->projectApproval()->with('client')->first();
+        $project->load('approvalClient');
 
-        if (! $projectApproval) {
+        if ($project->approval_status === null) {
             return $this->notFound('No project approval record found for this project');
         }
 
         return $this->success(
-            ['project_approval' => $this->formatProjectApproval($projectApproval)],
+            ['project_approval' => $project->approvalPayload()],
             'Project approval retrieved'
         );
     }
@@ -56,24 +55,19 @@ class ProjectApprovalController extends Controller
             return $this->error('Project must be sent before it can be approved', 422);
         }
 
-        $projectApproval = $project->projectApproval;
-
-        if (! $projectApproval || $projectApproval->status !== ProjectApproval::STATUS_PENDING) {
+        if (! $project->hasPendingApproval()) {
             return $this->error('No pending project approval found for this project', 422);
         }
 
         $client = ClientProjectLinker::resolve($clientUser, $project);
 
-        $projectApproval->update([
-            'client_id' => $client->id,
-            'comment' => $validator->validated()['comment'] ?? null,
-            'status' => ProjectApproval::STATUS_APPROVED,
-        ]);
-
         $project->update([
             'client_id' => $client->id,
             'approved_at' => now(),
             'status' => Project::STATUS_APPROVED,
+            'approval_status' => Project::APPROVAL_STATUS_APPROVED,
+            'approval_comment' => $validator->validated()['comment'] ?? null,
+            'approval_client_id' => $client->id,
         ]);
 
         ActivityLogger::log(
@@ -83,9 +77,11 @@ class ProjectApprovalController extends Controller
             $clientUser
         );
 
+        $project->load('approvalClient');
+
         return $this->success(
             [
-                'project_approval' => $this->formatProjectApproval($projectApproval->fresh()->load('client')),
+                'project_approval' => $project->approvalPayload(),
                 'project' => [
                     'id' => $project->id,
                     'status' => $project->status,
@@ -119,27 +115,31 @@ class ProjectApprovalController extends Controller
             return $this->error('Project must be sent before it can be rejected', 422);
         }
 
-        $projectApproval = $project->projectApproval;
-
-        if (! $projectApproval || $projectApproval->status !== ProjectApproval::STATUS_PENDING) {
+        if (! $project->hasPendingApproval()) {
             return $this->error('No pending project approval found for this project', 422);
         }
 
         $client = ClientProjectLinker::resolve($clientUser, $project);
 
-        $projectApproval->update([
-            'client_id' => $client->id,
-            'comment' => $validator->validated()['comment'] ?? null,
-            'status' => ProjectApproval::STATUS_REJECTED,
-        ]);
-
         $project->update([
             'status' => Project::STATUS_DRAFT,
+            'approval_status' => Project::APPROVAL_STATUS_REJECTED,
+            'approval_comment' => $validator->validated()['comment'] ?? null,
+            'approval_client_id' => $client->id,
         ]);
+
+        ActivityLogger::log(
+            $project,
+            ActivityLog::ACTION_SCOPE_REJECTED,
+            "Client \"{$client->name}\" rejected the project scope",
+            $clientUser
+        );
+
+        $project->load('approvalClient');
 
         return $this->success(
             [
-                'project_approval' => $this->formatProjectApproval($projectApproval->fresh()->load('client')),
+                'project_approval' => $project->approvalPayload(),
                 'project' => [
                     'id' => $project->id,
                     'status' => $project->status,
@@ -160,32 +160,5 @@ class ProjectApprovalController extends Controller
         }
 
         return $project;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function formatProjectApproval(ProjectApproval $projectApproval): array
-    {
-        return [
-            'id' => $projectApproval->id,
-            'project_id' => $projectApproval->project_id,
-            'projectId' => $projectApproval->project_id,
-            'client_id' => $projectApproval->client_id,
-            'clientId' => $projectApproval->client_id,
-            'comment' => $projectApproval->comment,
-            'status' => $projectApproval->status,
-            'client' => $projectApproval->relationLoaded('client') && $projectApproval->client
-                ? [
-                    'id' => $projectApproval->client->id,
-                    'name' => $projectApproval->client->name,
-                    'email' => $projectApproval->client->email,
-                ]
-                : null,
-            'created_at' => $projectApproval->created_at,
-            'createdAt' => $projectApproval->created_at,
-            'updated_at' => $projectApproval->updated_at,
-            'updatedAt' => $projectApproval->updated_at,
-        ];
     }
 }
