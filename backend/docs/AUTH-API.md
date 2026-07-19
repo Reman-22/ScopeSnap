@@ -1,6 +1,8 @@
-# Auth API (React)
+# Auth API
 
 **Base URL:** `http://127.0.0.1:8000/api`
+
+See also: [README.md](./README.md) · [OVERVIEW.md](./OVERVIEW.md)
 
 **Start backend:**
 
@@ -227,18 +229,24 @@ Accept: application/json
 ```json
 {
   "success": true,
-  "message": "User retrieved successfully",
+  "message": "User profile retrieved",
   "data": {
-    "id": 1,
-    "name": "Ahmed Dev",
-    "email": "ahmed@example.com",
-    "role": "freelancer",
-    "role_label": "Freelancer",
-    "phone": null,
-    "img": null
+    "user": {
+      "id": 1,
+      "name": "Ahmed Dev",
+      "email": "ahmed@example.com",
+      "phone": null,
+      "img": null,
+      "role": true,
+      "role_label": "freelancer",
+      "created_at": "2026-07-19T10:00:00.000000Z",
+      "updated_at": "2026-07-19T10:00:00.000000Z"
+    }
   }
 }
 ```
+
+`role`: `true` = freelancer, `false` = client. Use `role_label` for UI strings.
 
 ---
 
@@ -506,24 +514,16 @@ if (json.success) {
 
 # Postman
 
-Import the following collection:
+Import the full API collection:
+
+```text
+backend/docs/ScopeSnap-API.postman_collection.json
+```
+
+Auth-only collection (legacy):
 
 ```text
 backend/docs/ScopeSnap-Auth.postman_collection.json
-```
-
-After **Register** or **Login**, the token is saved automatically to the collection variable:
-
-```text
-token
-```
-
-The token can then be automatically used for protected requests such as:
-
-```text
-GET /auth/me
-POST /auth/profile
-POST /auth/logout
 ```
 
 ---
