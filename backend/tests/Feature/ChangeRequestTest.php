@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Approval;
+use App\Models\ProjectApproval;
 use App\Models\ChangeRequest;
 use App\Models\Client;
 use App\Models\Project;
@@ -138,10 +138,10 @@ class ChangeRequestTest extends TestCase
             'approved_at' => now(),
         ]);
 
-        Approval::create([
+        ProjectApproval::create([
             'project_id' => $project->id,
             'client_id' => $client->id,
-            'status' => Approval::STATUS_APPROVED,
+            'status' => ProjectApproval::STATUS_APPROVED,
         ]);
 
         if ($withFreelancer) {

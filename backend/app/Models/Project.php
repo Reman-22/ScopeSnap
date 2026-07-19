@@ -85,11 +85,11 @@ class Project extends Model
     }
 
     /**
-     * @return HasOne<Approval, $this>
+     * @return HasOne<ProjectApproval, $this>
      */
-    public function approval(): HasOne
+    public function projectApproval(): HasOne
     {
-        return $this->hasOne(Approval::class);
+        return $this->hasOne(ProjectApproval::class);
     }
 
     /**

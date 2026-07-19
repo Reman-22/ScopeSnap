@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Approval extends Model
+class ProjectApproval extends Model
 {
     public const STATUS_PENDING = 'pending';
 

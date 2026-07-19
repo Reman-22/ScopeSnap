@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Approval;
 use App\Models\Project;
+use App\Models\ProjectApproval;
 use App\Models\User;
 use App\Services\ClientProjectLinker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class ApprovalController extends Controller
+class ProjectApprovalController extends Controller
 {
     public function show(Request $request, Project $project): JsonResponse
     {
@@ -19,15 +19,15 @@ class ApprovalController extends Controller
             abort(403, 'You do not have access to this project');
         }
 
-        $approval = $project->approval()->with('client')->first();
+        $projectApproval = $project->projectApproval()->with('client')->first();
 
-        if (! $approval) {
-            return $this->notFound('No approval record found for this project');
+        if (! $projectApproval) {
+            return $this->notFound('No project approval record found for this project');
         }
 
         return $this->success(
-            ['approval' => $this->formatApproval($approval)],
-            'Approval retrieved'
+            ['project_approval' => $this->formatProjectApproval($projectApproval)],
+            'Project approval retrieved'
         );
     }
 
@@ -54,18 +54,18 @@ class ApprovalController extends Controller
             return $this->error('Project must be sent before it can be approved', 422);
         }
 
-        $approval = $project->approval;
+        $projectApproval = $project->projectApproval;
 
-        if (! $approval || $approval->status !== Approval::STATUS_PENDING) {
-            return $this->error('No pending approval found for this project', 422);
+        if (! $projectApproval || $projectApproval->status !== ProjectApproval::STATUS_PENDING) {
+            return $this->error('No pending project approval found for this project', 422);
         }
 
         $client = ClientProjectLinker::resolve($clientUser, $project);
 
-        $approval->update([
+        $projectApproval->update([
             'client_id' => $client->id,
             'comment' => $validator->validated()['comment'] ?? null,
-            'status' => Approval::STATUS_APPROVED,
+            'status' => ProjectApproval::STATUS_APPROVED,
         ]);
 
         $project->update([
@@ -76,7 +76,7 @@ class ApprovalController extends Controller
 
         return $this->success(
             [
-                'approval' => $this->formatApproval($approval->fresh()->load('client')),
+                'project_approval' => $this->formatProjectApproval($projectApproval->fresh()->load('client')),
                 'project' => [
                     'id' => $project->id,
                     'status' => $project->status,
@@ -110,18 +110,18 @@ class ApprovalController extends Controller
             return $this->error('Project must be sent before it can be rejected', 422);
         }
 
-        $approval = $project->approval;
+        $projectApproval = $project->projectApproval;
 
-        if (! $approval || $approval->status !== Approval::STATUS_PENDING) {
-            return $this->error('No pending approval found for this project', 422);
+        if (! $projectApproval || $projectApproval->status !== ProjectApproval::STATUS_PENDING) {
+            return $this->error('No pending project approval found for this project', 422);
         }
 
         $client = ClientProjectLinker::resolve($clientUser, $project);
 
-        $approval->update([
+        $projectApproval->update([
             'client_id' => $client->id,
             'comment' => $validator->validated()['comment'] ?? null,
-            'status' => Approval::STATUS_REJECTED,
+            'status' => ProjectApproval::STATUS_REJECTED,
         ]);
 
         $project->update([
@@ -130,7 +130,7 @@ class ApprovalController extends Controller
 
         return $this->success(
             [
-                'approval' => $this->formatApproval($approval->fresh()->load('client')),
+                'project_approval' => $this->formatProjectApproval($projectApproval->fresh()->load('client')),
                 'project' => [
                     'id' => $project->id,
                     'status' => $project->status,
@@ -156,27 +156,27 @@ class ApprovalController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formatApproval(Approval $approval): array
+    private function formatProjectApproval(ProjectApproval $projectApproval): array
     {
         return [
-            'id' => $approval->id,
-            'project_id' => $approval->project_id,
-            'projectId' => $approval->project_id,
-            'client_id' => $approval->client_id,
-            'clientId' => $approval->client_id,
-            'comment' => $approval->comment,
-            'status' => $approval->status,
-            'client' => $approval->relationLoaded('client') && $approval->client
+            'id' => $projectApproval->id,
+            'project_id' => $projectApproval->project_id,
+            'projectId' => $projectApproval->project_id,
+            'client_id' => $projectApproval->client_id,
+            'clientId' => $projectApproval->client_id,
+            'comment' => $projectApproval->comment,
+            'status' => $projectApproval->status,
+            'client' => $projectApproval->relationLoaded('client') && $projectApproval->client
                 ? [
-                    'id' => $approval->client->id,
-                    'name' => $approval->client->name,
-                    'email' => $approval->client->email,
+                    'id' => $projectApproval->client->id,
+                    'name' => $projectApproval->client->name,
+                    'email' => $projectApproval->client->email,
                 ]
                 : null,
-            'created_at' => $approval->created_at,
-            'createdAt' => $approval->created_at,
-            'updated_at' => $approval->updated_at,
-            'updatedAt' => $approval->updated_at,
+            'created_at' => $projectApproval->created_at,
+            'createdAt' => $projectApproval->created_at,
+            'updated_at' => $projectApproval->updated_at,
+            'updatedAt' => $projectApproval->updated_at,
         ];
     }
 }

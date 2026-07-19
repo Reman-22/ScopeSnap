@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Approval;
+use App\Models\ProjectApproval;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,9 +68,9 @@ class ProjectTest extends TestCase
             'status' => Project::STATUS_SENT,
         ]);
 
-        Approval::create([
+        ProjectApproval::create([
             'project_id' => $project->id,
-            'status' => Approval::STATUS_PENDING,
+            'status' => ProjectApproval::STATUS_PENDING,
         ]);
 
         Sanctum::actingAs($clientUser);
@@ -79,7 +79,7 @@ class ProjectTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.project.status', 'approved')
-            ->assertJsonPath('data.approval.status', 'approved');
+            ->assertJsonPath('data.project_approval.status', 'approved');
 
         $project->refresh();
 

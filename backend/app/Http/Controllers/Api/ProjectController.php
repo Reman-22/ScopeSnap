@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Approval;
+use App\Models\ProjectApproval;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\ScopeFormatter;
@@ -106,12 +106,12 @@ class ProjectController extends Controller
 
         $project->update(['status' => Project::STATUS_SENT]);
 
-        Approval::updateOrCreate(
+        ProjectApproval::updateOrCreate(
             ['project_id' => $project->id],
             [
                 'client_id' => null,
                 'comment' => null,
-                'status' => Approval::STATUS_PENDING,
+                'status' => ProjectApproval::STATUS_PENDING,
             ]
         );
 
@@ -125,7 +125,7 @@ class ProjectController extends Controller
     {
         $project = Project::query()
             ->where('share_link', $shareLink)
-            ->with(['client', 'scopeSections.items', 'approval'])
+            ->with(['client', 'scopeSections.items', 'projectApproval'])
             ->first();
 
         if (! $project) {
@@ -198,12 +198,20 @@ class ProjectController extends Controller
             'scopeSections' => $project->relationLoaded('scopeSections')
                 ? ScopeFormatter::sections($project->scopeSections)
                 : [],
-            'approval' => $project->relationLoaded('approval') && $project->approval
+            'project_approval' => $project->relationLoaded('projectApproval') && $project->projectApproval
                 ? [
-                    'id' => $project->approval->id,
-                    'status' => $project->approval->status,
-                    'comment' => $project->approval->comment,
-                    'clientId' => $project->approval->client_id,
+                    'id' => $project->projectApproval->id,
+                    'status' => $project->projectApproval->status,
+                    'comment' => $project->projectApproval->comment,
+                    'clientId' => $project->projectApproval->client_id,
+                ]
+                : null,
+            'projectApproval' => $project->relationLoaded('projectApproval') && $project->projectApproval
+                ? [
+                    'id' => $project->projectApproval->id,
+                    'status' => $project->projectApproval->status,
+                    'comment' => $project->projectApproval->comment,
+                    'clientId' => $project->projectApproval->client_id,
                 ]
                 : null,
             'created_at' => $project->created_at,
