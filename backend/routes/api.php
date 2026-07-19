@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ApprovalController;
+use App\Http\Controllers\Api\ChangeRequestController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ProjectController;
@@ -28,12 +29,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('client')->group(function () {
         Route::post('/share/{shareLink}/approve', [ApprovalController::class, 'approve']);
         Route::post('/share/{shareLink}/reject', [ApprovalController::class, 'reject']);
+        Route::get('/change-requests', [ChangeRequestController::class, 'indexForClient']);
+        Route::post('/projects/{project}/change-requests', [ChangeRequestController::class, 'store']);
     });
+
+    Route::get('/change-requests/{changeRequest}', [ChangeRequestController::class, 'show']);
+    Route::delete('/change-requests/{changeRequest}', [ChangeRequestController::class, 'destroy']);
 
     Route::middleware('freelancer')->group(function () {
         Route::apiResource('clients', ClientController::class);
         Route::post('projects/{project}/send', [ProjectController::class, 'send']);
         Route::get('projects/{project}/approval', [ApprovalController::class, 'show']);
+        Route::get('projects/{project}/change-requests', [ChangeRequestController::class, 'indexForProject']);
+        Route::patch('change-requests/{changeRequest}/status', [ChangeRequestController::class, 'updateStatus']);
         Route::apiResource('projects', ProjectController::class);
         Route::apiResource('projects.sections', ScopeSectionController::class);
         Route::apiResource('projects.sections.items', ScopeItemController::class);

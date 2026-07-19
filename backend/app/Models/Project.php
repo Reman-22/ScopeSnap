@@ -92,6 +92,14 @@ class Project extends Model
         return $this->hasOne(Approval::class);
     }
 
+    /**
+     * @return HasMany<ChangeRequest, $this>
+     */
+    public function changeRequests(): HasMany
+    {
+        return $this->hasMany(ChangeRequest::class);
+    }
+
     public function isApproved(): bool
     {
         return in_array($this->status, [

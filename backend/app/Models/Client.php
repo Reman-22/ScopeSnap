@@ -37,4 +37,12 @@ class Client extends Model
     {
         return $this->hasMany(Project::class);
     }
+
+    /**
+     * @return HasMany<ChangeRequest, $this>
+     */
+    public function changeRequests(): HasMany
+    {
+        return $this->hasMany(ChangeRequest::class);
+    }
 }
