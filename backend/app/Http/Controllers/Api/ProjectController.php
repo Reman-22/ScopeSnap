@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Client;
+use App\Models\Approval;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\ScopeFormatter;
@@ -106,6 +106,15 @@ class ProjectController extends Controller
 
         $project->update(['status' => Project::STATUS_SENT]);
 
+        Approval::updateOrCreate(
+            ['project_id' => $project->id],
+            [
+                'client_id' => null,
+                'comment' => null,
+                'status' => Approval::STATUS_PENDING,
+            ]
+        );
+
         return $this->success(
             ['project' => $this->formatProject($project->fresh()->load(['client', 'scopeSections.items']))],
             'Project sent to client'
@@ -116,7 +125,7 @@ class ProjectController extends Controller
     {
         $project = Project::query()
             ->where('share_link', $shareLink)
-            ->with(['client', 'scopeSections.items'])
+            ->with(['client', 'scopeSections.items', 'approval'])
             ->first();
 
         if (! $project) {
@@ -129,71 +138,11 @@ class ProjectController extends Controller
         );
     }
 
-    public function approve(Request $request, string $shareLink): JsonResponse
-    {
-        /** @var User $clientUser */
-        $clientUser = $request->user();
-
-        $project = Project::query()
-            ->where('share_link', $shareLink)
-            ->first();
-
-        if (! $project) {
-            return $this->notFound('Project not found');
-        }
-
-        if ($project->isApproved()) {
-            return $this->error('Project is already approved', 422);
-        }
-
-        if ($project->status !== Project::STATUS_SENT) {
-            return $this->error('Project must be sent before it can be approved', 422);
-        }
-
-        $client = $this->resolveClientForProject($clientUser, $project);
-
-        $project->update([
-            'client_id' => $client->id,
-            'approved_at' => now(),
-            'status' => Project::STATUS_APPROVED,
-        ]);
-
-        return $this->success(
-            ['project' => $this->formatProject($project->fresh()->load(['client', 'scopeSections.items']))],
-            'Project approved successfully'
-        );
-    }
-
     private function ensureOwnedByFreelancer(Request $request, Project $project): void
     {
         if ($project->owner_id !== $request->user()?->id) {
             abort(403, 'You do not have access to this project');
         }
-    }
-
-    private function resolveClientForProject(User $clientUser, Project $project): Client
-    {
-        $client = Client::query()
-            ->where('owner_id', $project->owner_id)
-            ->where(function ($query) use ($clientUser) {
-                $query->where('user_id', $clientUser->id)
-                    ->orWhere('email', $clientUser->email);
-            })
-            ->first();
-
-        if (! $client) {
-            $client = Client::create([
-                'owner_id' => $project->owner_id,
-                'user_id' => $clientUser->id,
-                'name' => $clientUser->name,
-                'email' => $clientUser->email,
-                'phone' => $clientUser->phone,
-            ]);
-        } elseif (! $client->user_id) {
-            $client->update(['user_id' => $clientUser->id]);
-        }
-
-        return $client;
     }
 
     /**
@@ -249,6 +198,14 @@ class ProjectController extends Controller
             'scopeSections' => $project->relationLoaded('scopeSections')
                 ? ScopeFormatter::sections($project->scopeSections)
                 : [],
+            'approval' => $project->relationLoaded('approval') && $project->approval
+                ? [
+                    'id' => $project->approval->id,
+                    'status' => $project->approval->status,
+                    'comment' => $project->approval->comment,
+                    'clientId' => $project->approval->client_id,
+                ]
+                : null,
             'created_at' => $project->created_at,
             'createdAt' => $project->created_at,
             'updated_at' => $project->updated_at,

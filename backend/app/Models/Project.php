@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Project extends Model
@@ -81,6 +82,14 @@ class Project extends Model
     public function scopeSections(): HasMany
     {
         return $this->hasMany(ScopeSection::class)->orderBy('position');
+    }
+
+    /**
+     * @return HasOne<Approval, $this>
+     */
+    public function approval(): HasOne
+    {
+        return $this->hasOne(Approval::class);
     }
 
     public function isApproved(): bool

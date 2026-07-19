@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ApprovalController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ProjectController;
@@ -25,12 +26,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('client')->group(function () {
-        Route::post('/share/{shareLink}/approve', [ProjectController::class, 'approve']);
+        Route::post('/share/{shareLink}/approve', [ApprovalController::class, 'approve']);
+        Route::post('/share/{shareLink}/reject', [ApprovalController::class, 'reject']);
     });
 
     Route::middleware('freelancer')->group(function () {
         Route::apiResource('clients', ClientController::class);
         Route::post('projects/{project}/send', [ProjectController::class, 'send']);
+        Route::get('projects/{project}/approval', [ApprovalController::class, 'show']);
         Route::apiResource('projects', ProjectController::class);
         Route::apiResource('projects.sections', ScopeSectionController::class);
         Route::apiResource('projects.sections.items', ScopeItemController::class);

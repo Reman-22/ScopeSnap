@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Client;
+use App\Models\Approval;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,13 +68,18 @@ class ProjectTest extends TestCase
             'status' => Project::STATUS_SENT,
         ]);
 
+        Approval::create([
+            'project_id' => $project->id,
+            'status' => Approval::STATUS_PENDING,
+        ]);
+
         Sanctum::actingAs($clientUser);
 
         $response = $this->postJson('/api/share/share-approve-123/approve');
 
         $response->assertOk()
             ->assertJsonPath('data.project.status', 'approved')
-            ->assertJsonPath('data.project.clientId', fn ($value) => $value !== null);
+            ->assertJsonPath('data.approval.status', 'approved');
 
         $project->refresh();
 
